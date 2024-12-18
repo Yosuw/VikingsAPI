@@ -3,31 +3,88 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/api/utils/database.php';
 
 function findOneViking(string $id) {
     $db = getDatabaseConnection();
-    $sql = "SELECT id, name, health, attack, defense FROM viking WHERE id = :id";
+    $sql = "SELECT 
+            v.id, 
+            v.name, 
+            v.health, 
+            v.attack, 
+            v.defense, 
+            v.weaponId
+        FROM 
+            viking v
+        LEFT JOIN 
+            weapon w 
+        ON 
+            v.weaponId = w.id
+        WHERE 
+            v.id = :id
+    ";
     $stmt = $db->prepare($sql);
     $res = $stmt->execute(['id' => $id]);
+
     if ($res) {
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $viking = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($viking) {
+            $weaponLink = $viking['weaponId'] 
+                ? '/api/weapon/findOne.php?id=' . $viking['weaponId'] 
+                : "";
+
+            return [
+                'id' => $viking['id'],
+                'name' => $viking['name'],
+                'health' => $viking['health'],
+                'attack' => $viking['attack'],
+                'defense' => $viking['defense'],
+                'weapon' => $weaponLink
+            ];
+        }
     }
+
     return null;
 }
 
-function findAllVikings (string $name = "", int $limit = 10, int $offset = 0) {
+
+function findAllVikings(string $name = "", int $limit = 10, int $offset = 0) {
     $db = getDatabaseConnection();
     $params = [];
-    $sql = "SELECT id, name, health, attack, defense FROM viking";
+    $sql = "SELECT 
+            v.id, 
+            v.name, 
+            v.health, 
+            v.attack, 
+            v.defense, 
+            v.weaponId 
+        FROM 
+            viking v
+        LEFT JOIN 
+            weapon w 
+        ON 
+            v.weaponId = w.id
+    ";
     if ($name) {
-        $sql .= " WHERE name LIKE %:name%";
+        $sql .= " WHERE v.name LIKE %:name%";
         $params['name'] = $name;
     }
-    $sql .= " LIMIT $limit OFFSET $offset ";
+    $sql .= " LIMIT $limit OFFSET $offset";
     $stmt = $db->prepare($sql);
     $res = $stmt->execute($params);
+
     if ($res) {
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $vikings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($vikings as &$viking) {
+            $viking['weapon'] = $viking['weaponId'] 
+                ? '/api/weapon/findOne.php?id=' . $viking['weaponId'] 
+                : "";
+        }
+
+        return $vikings;
     }
+
     return null;
 }
+
 
 function createViking(string $name, int $health, int $attack, int $defense) {
     $db = getDatabaseConnection();
