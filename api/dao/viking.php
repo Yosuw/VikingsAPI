@@ -88,45 +88,15 @@ function findAllVikings(string $name = "", int $limit = 10, int $offset = 0) {
 
 function createViking(string $name, int $health, int $attack, int $defense) {
     $db = getDatabaseConnection();
-
-    // Récupérer une arme aléatoire par ID
-    $weaponId = getDefaultWeaponId(); // Récupère l'ID d'une arme aléatoire
-
-    if (!$weaponId) {
-        error_log("No valid weapon found to assign to Viking.");
-        return null;  // Si aucune arme valide n'a été trouvée, on retourne null
-    }
-
-    // Création du Viking
-    $sql = "INSERT INTO viking (name, health, attack, defense, weaponId) 
-            VALUES (:name, :health, :attack, :defense, :weaponId)";
-    
+    $sql = "INSERT INTO viking (name, health, attack, defense) VALUES (:name, :health, :attack, :defense)";
     $stmt = $db->prepare($sql);
-    $res = $stmt->execute([
-        'name' => $name,
-        'health' => $health,
-        'attack' => $attack,
-        'defense' => $defense,
-        'weaponId' => $weaponId
-    ]);
-
+    $res = $stmt->execute(['name' => $name, 'health' => $health, 'attack' => $attack, 'defense' => $defense]);
     if ($res) {
-        $vikingId = $db->lastInsertId();
-
-  
-
-        return $vikingId;
+        return $db->lastInsertId();
     }
-
     return null;
 }
 
-
-/**
- * Récupère l'ID de l'arme par défaut.
- *
- * @return int|null L'ID de l'arme par défaut ou null si aucun n'est défini.
- */
 function getDefaultWeaponId() {
     $db = getDatabaseConnection();
 
@@ -164,7 +134,7 @@ function updateViking(string $id, string $name, int $health, int $attack, int $d
     if ($res) {
         
         if ($weaponId !== null) {
-            // Vérifier si l'arme existe
+            
             $weaponExists = checkWeapon($weaponId, $db);
 
             if ($weaponExists) {
