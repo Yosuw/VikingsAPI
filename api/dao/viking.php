@@ -118,3 +118,22 @@ function deleteViking(string $id) {
     }
     return null;
 }
+
+function resetVikingsWeapon($weaponId) {
+    $db = getDatabaseConnection();
+    $stmt = $db->prepare("UPDATE viking SET weaponId = NULL WHERE weaponId = ?");
+    return $stmt->execute([$weaponId]);
+}
+
+function findVikingsByWeapon($weaponId) {
+    $db = getDatabaseConnection();
+
+    $query = 'SELECT id, name FROM viking WHERE weaponId = ?';
+    $stmt = $db->prepare($query);
+
+    if (!$stmt->execute([$weaponId])) {
+        return false;
+    }
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
