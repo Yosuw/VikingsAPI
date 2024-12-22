@@ -97,16 +97,73 @@ function createViking(string $name, int $health, int $attack, int $defense) {
     return null;
 }
 
-function updateViking(string $id, string $name, int $health, int $attack, int $defense) {
+function getDefaultWeaponId() {
     $db = getDatabaseConnection();
+
+    
+    $sql = "SELECT MIN(id) as min_id, MAX(id) as max_id FROM weapon";
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $minId = $result['min_id'];
+    $maxId = $result['max_id'];
+
+    
+    $randomId = rand($minId, $maxId);
+
+    
+    $sql = "SELECT id FROM weapon WHERE id = :id";
+    $stmt = $db->prepare($sql);
+    $stmt->execute(['id' => $randomId]);
+    $weapon = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    
+    return $weapon ? $weapon['id'] : null;
+}
+
+
+function updateViking(string $id, string $name, int $health, int $attack, int $defense, ?int $weaponId = null) {
+    $db = getDatabaseConnection();
+
+    
     $sql = "UPDATE viking SET name = :name, health = :health, attack = :attack, defense = :defense WHERE id = :id";
     $stmt = $db->prepare($sql);
     $res = $stmt->execute(['id' => $id, 'name' => $name, 'health' => $health, 'attack' => $attack, 'defense' => $defense]);
+
     if ($res) {
+        
+        if ($weaponId !== null) {
+            
+            $weaponExists = checkWeapon($weaponId, $db);
+
+            if ($weaponExists) {
+                
+                $sql = "UPDATE viking SET weaponId = :weaponId WHERE id = :id";
+                $stmt = $db->prepare($sql);
+                $stmt->execute(['weaponId' => $weaponId, 'id' => $id]);
+            } else {
+                
+                $sql = "UPDATE viking SET weaponId = NULL WHERE id = :id";
+                $stmt = $db->prepare($sql);
+                $stmt->execute(['id' => $id]);
+            }
+        }
+
         return $stmt->rowCount();
     }
+
     return null;
 }
+
+function checkWeapon(int $weaponId, $db) {
+    $sql = "SELECT id FROM weapon WHERE id = :weaponId";
+    $stmt = $db->prepare($sql);
+    $stmt->execute(['weaponId' => $weaponId]);
+    $weapon = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $weapon ? true : false;
+}
+
 
 function deleteViking(string $id) {
     $db = getDatabaseConnection();
@@ -117,6 +174,51 @@ function deleteViking(string $id) {
         return $stmt->rowCount();
     }
     return null;
+}
+
+function getDefaultVikingId() {
+    $db = getDatabaseConnection();
+
+    try {
+        $query = "SELECT id FROM vikings WHERE is_default = 1 LIMIT 1";
+        $stmt = $db->query($query);
+        $viking = $stmt->fetch();
+
+        return $viking ? $viking['id'] : null;
+    } catch (PDOException $e) {
+        error_log("Erreur lors de la récupération du Viking par défaut : " . $e->getMessage());
+        return null;
+    }
+}
+
+function returnSuccess($message = 'Success') {
+    http_response_code(200); 
+    echo json_encode(['message' => $message]);
+}
+
+function isVikingExists($vikingId) {
+    $db = getDatabaseConnection();
+    $sql = "SELECT COUNT(*) FROM viking WHERE id = :id";
+    $stmt = $db->prepare($sql);
+    $stmt->execute(['id' => $vikingId]);
+    return $stmt->fetchColumn() > 0;
+}
+
+
+function isWeaponExists($weaponId) {
+    $db = getDatabaseConnection();
+    $sql = "SELECT COUNT(*) FROM weapon WHERE id = :id";
+    $stmt = $db->prepare($sql);
+    $stmt->execute(['id' => $weaponId]);
+    return $stmt->fetchColumn() > 0;
+}
+
+
+function updateVikingWeapon($vikingId, $weaponId) {
+    $db = getDatabaseConnection();
+    $sql = "UPDATE viking SET weaponId = :weaponId WHERE id = :id";
+    $stmt = $db->prepare($sql);
+    return $stmt->execute(['weaponId' => $weaponId, 'id' => $vikingId]);
 }
 
 function resetVikingsWeapon($weaponId) {
@@ -137,3 +239,4 @@ function findVikingsByWeapon($weaponId) {
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+

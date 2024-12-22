@@ -18,17 +18,25 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']);
 
+
 if (validateMandatoryParams($data, ['name', 'health', 'attack', 'defense'])) {
     verifyViking($data);
 
-    $updated = updateViking($id, $data['name'], $data['health'], $data['attack'], $data['defense']);
+ 
+    $weaponId = isset($data['weaponId']) ? $data['weaponId'] : null;
+
+    
+    $updated = updateViking($id, $data['name'], $data['health'], $data['attack'], $data['defense'], $weaponId);
+    
     if ($updated == 1) {
-        http_response_code(204);
+    returnSuccess('Viking updated successfully');
     } elseif ($updated == 0) {
-        returnError(404, 'Viking not found');
+    returnError(404, 'Viking not found');
     } else {
-        returnError(500, 'Could not update the viking');
+    returnError(500, 'Could not update the viking');
     }
-} else {
+
+    } else {
+ 
     returnError(412, 'Mandatory parameters : name, health, attack, defense');
 }
