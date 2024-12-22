@@ -13,12 +13,15 @@ if (!methodIsAllowed('create')) {
 $data = getBody();
 
 if (validateMandatoryParams($data, ['name', 'health', 'attack', 'defense'])) {
+
     verifyViking($data);
 
     $newVikingId = createViking($data['name'], $data['health'], $data['attack'], $data['defense']);
+    
     if (!$newVikingId) {
         returnError(500, 'Could not create the viking');
     }
+
     echo json_encode(['id' => $newVikingId]);
     http_response_code(201);
 } else {
