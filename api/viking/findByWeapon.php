@@ -32,7 +32,7 @@ $response = [];
 foreach ($vikings as $viking) {
     $response[] = [
         'name' => $viking['name'],
-        'link' => '/api/viking/details.php?id=' . $viking['id']
+        'link' => '/api/viking/findOne.php?id=' . $viking['id']
     ];
 }
 
