@@ -1,6 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/api/dao/weapon.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/api/utils/server.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/api/dao/viking.php'; 
 
 header('Content-Type: application/json');
 
@@ -10,7 +11,16 @@ if (!methodIsAllowed('delete')) {
 }
 
 if (isset($_GET['id'])) {
-    $deleted = deleteWeapon($_GET['id']);
+    $weaponId = intval($_GET['id']);
+    $resetVikings = resetVikingsWeapon($weaponId); 
+
+    if ($resetVikings === false) {
+        returnError(500, 'Could not update vikings before deleting weapon');
+        return;
+    }
+
+    // Supprimer l'arme
+    $deleted = deleteWeapon($weaponId);
     if ($deleted == 1) {
         http_response_code(204);
     } elseif ($deleted == 0) {
